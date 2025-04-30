@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 import RestaurantRegistration from './components/RestaurantRegistration';
+import VolunteerForm from './components/VolunteerForm';
 
 function App() {
   return (
@@ -9,6 +10,7 @@ function App() {
       <Routes>
         <Route path="/" element={<MainContent />} />
         <Route path="/restaurant-registration" element={<RestaurantRegistration />} />
+        <Route path="/volunteer-registration" element={<VolunteerForm />} />
       </Routes>
     </Router>
   );
@@ -196,11 +198,11 @@ function TestimonialsSection() {
 
 function ContributeSection() {
   const handleDonateClick = () => {
-    window.location.replace('https://food-don.vercel.app/donate');
+    window.open('https://food-don.vercel.app/donate', '_blank');
   };
-
+  
   const handleGetHelpClick = () => {
-    window.location.replace('https://food-don.vercel.app/get-food');
+    window.open('https://food-don.vercel.app/get-food', '_blank');
   };
 
   return (
@@ -230,8 +232,10 @@ function VolunteerSection() {
     window.location.href = registrationPath;
   };
 
-  const handleVolunteerClick = () => {
-    window.location.replace('https://food-don.vercel.app/volunteer');
+  const handleVolunteerClick = (e) => {
+    e.preventDefault();
+    const registrationPath = `${window.location.origin}/volunteer-registration`;
+    window.location.href = registrationPath;
   };
 
   return (
