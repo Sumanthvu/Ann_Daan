@@ -1,8 +1,20 @@
 import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
-
+import RestaurantRegistration from './components/RestaurantRegistration';
 
 function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<MainContent />} />
+        <Route path="/restaurant-registration" element={<RestaurantRegistration />} />
+      </Routes>
+    </Router>
+  );
+}
+
+function MainContent() {
   const [slideIndex, setSlideIndex] = useState(1);
 
   // Function to show slides
@@ -60,7 +72,7 @@ function Header() {
     <header>
       <div className="header-content">
         <div className="logo">
-          <img src="./assets/img/Logo.png" alt="Ann Daan Logo" />
+          <img src="/src/assets/img/Logo.png" alt="Ann Daan Logo" />
           <h1>Ann Daan</h1>
         </div>
         <nav>
@@ -85,28 +97,28 @@ function SliderSection({ plusSlides }) {
         <div className="mySlides fade">
           <div className="numbertext">1 / 4</div>
           <div className="img-container">
-            <img src="../assets/img/img1.jpg" alt="Slide 1" />
+            <img src="/src/assets/img/img1.jpg" alt="Slide 1" />
           </div>
         </div>
 
         <div className="mySlides fade">
           <div className="numbertext">2 / 4</div>
           <div className="img-container">
-            <img src="../assets/img/img2.jpg" alt="Slide 2" />
+            <img src="/src/assets/img/img2.jpg" alt="Slide 2" />
           </div>
         </div>
 
         <div className="mySlides fade">
           <div className="numbertext">3 / 4</div>
           <div className="img-container">
-            <img src="../assets/img/img3.jpg" alt="Slide 3" />
+            <img src="/src/assets/img/img3.jpg" alt="Slide 3" />
           </div>
         </div>
         
         <div className="mySlides fade">
           <div className="numbertext">4 / 4</div>
           <div className="img-container">
-            <img src="../assets/img/img4.jpg" alt="Slide 4" />
+            <img src="/src/assets/img/img4.jpg" alt="Slide 4" />
           </div>
         </div>
         
@@ -137,17 +149,17 @@ function MissionSection() {
 
           <div className="mission-stats">
             <div className="stat-item">
-              <i className="fas fa-utensils"></i>
+              {/* <i className="fas fa-utensils"></i> */}
               <span className="number">1M+</span>
               <span className="label">Meals Served</span>
             </div>
             <div className="stat-item">
-              <i className="fas fa-users"></i>
+              {/* <i className="fas fa-users"></i> */}
               <span className="number">50K+</span>
               <span className="label">Lives Impacted</span>
             </div>
             <div className="stat-item">
-              <i className="fas fa-map-marker-alt"></i>
+              {/* <i className="fas fa-map-marker-alt"></i> */}
               <span className="number">69+</span>
               <span className="label">Cities Covered</span>
             </div>
@@ -183,42 +195,60 @@ function TestimonialsSection() {
 }
 
 function ContributeSection() {
+  const handleDonateClick = () => {
+    window.location.replace('https://food-don.vercel.app/donate');
+  };
+
+  const handleGetHelpClick = () => {
+    window.location.replace('https://food-don.vercel.app/get-food');
+  };
+
   return (
     <section className="contribute" id="contribute">
       <div className="container2">
         <h2 id="animationid">Contribute</h2>
         <div className="content-box">
-          <img src="/api/placeholder/400/300" id="imgid1" alt="Donate Food" />
+          <img src="/src/api/i1.jpeg" id="imgid1" alt="Donate Food" />
         </div>
-        <a href="/donate-food" className="btn">Donate</a>
+        <a onClick={handleDonateClick} className="btn" style={{ cursor: 'pointer' }}>Donate</a>
       </div>
       <div className="container1">
         <h2 id="animationid">Get Help!</h2>
         <div className="content-box">
-          <img src="/api/placeholder/400/300" id="imgid1" alt="Get Food Help" />
+          <img src="/src/api/i2.jpeg" id="imgid1" alt="Get Food Help" />
         </div>
-        <a href="/get-food" className="btn">Get Help</a>
+        <a onClick={handleGetHelpClick} className="btn" style={{ cursor: 'pointer' }}>Get Help</a>
       </div>
     </section>
   );
 }
 
 function VolunteerSection() {
+  const handleRestaurantClick = (e) => {
+    e.preventDefault();
+    const registrationPath = `${window.location.origin}/restaurant-registration`;
+    window.location.href = registrationPath;
+  };
+
+  const handleVolunteerClick = () => {
+    window.location.replace('https://food-don.vercel.app/volunteer');
+  };
+
   return (
-    <section className="div2">
-      <div className="container1">
+    <section className="contribute">
+      <div className="container2">
         <h2 id="animationid">Restaurants</h2>
         <div className="content-box">
-          <img src="/api/placeholder/400/300" id="imgid1" alt="Restaurant Registration" />
+          <img src="/src/api/i3.jpeg" id="imgid1" alt="Restaurant Registration" />
         </div>
-        <a href="/hotel-registration" className="btn">Register</a>
+        <a onClick={handleRestaurantClick} className="btn" style={{ cursor: 'pointer' }}>Register</a>
       </div>
-      <div className="container1">
+      <div className="container2">
         <h2 id="animationid">Volunteer!</h2>
         <div className="content-box">
-          <img src="/api/placeholder/400/300" id="imgid1" alt="Volunteer Registration" />
+          <img src="/src/api/i4.jpg" id="imgid1" alt="Volunteer Registration" />
         </div>
-        <a href="/volunteer-registration" className="btn">Register</a>
+        <a onClick={handleVolunteerClick} className="btn" style={{ cursor: 'pointer' }}>Register</a>
       </div>
     </section>
   );
@@ -231,17 +261,17 @@ function HowItWorksSection() {
         <h2>How It Works</h2>
         <div style={{ margin: "50px", gap: "55px" }} className="how-it-works">
           <div className="step slide-in-left">
-            <img style={{ height: "300px", width: "300px" }} src="/api/placeholder/300/300" alt="Donate Food" />
+            <img src="/src/assets/img/Donate.png" alt="Donate Food" />
             <h3>Food is Donated</h3>
             <p>Generous donations of surplus and fresh food from local businesses, farmers, and community members.</p>
           </div>
           <div className="step fade-in">
-            <img style={{ height: "300px", width: "300px" }} src="/api/placeholder/300/300" alt="Secure Food" />
+            <img src="/src/assets/img/Secure.png" alt="Secure Food" />
             <h3>Food is Secured</h3>
             <p>Food is secured through our network of generous donors and partners, ensuring it reaches those in need.</p>
           </div>
           <div className="step slide-in-right">
-            <img style={{ height: "300px", width: "300px" }} src="/api/placeholder/300/300" alt="Pick Up Food" />
+            <img src="/src/assets/img/Pick.png" alt="Pick Up Food" />
             <h3>Food is Picked Up</h3>
             <p>Our team ensures that every donation is picked up promptly and delivered safely to those who need it most.</p>
           </div>
@@ -253,14 +283,14 @@ function HowItWorksSection() {
 
 function TeamSection() { 
   const teamMembers = [
-    { name: "Vaidik Saxena", id: "LCS2024016", image: "../assets/img/1.jpg/250/250" },
-    { name: "Sumanth V U", id: "LIT2024058", image: "/api/./assets/img/2.jpg/250/250" },
-    { name: "Mozammil Ali", id: "LCS2024035", image: "/api/placeholder/250/250" },
-    { name: "Chowdam Tanmai", id: "LCS2024016", image: "/api/placeholder/250/250" },
-    { name: "Sandesh Raj", id: "LCS2024004", image: "/api/placeholder/250/250" },
-    { name: "Vansh Tomar", id: "LCS2024043", image: "/api/placeholder/250/250" },
-    { name: "Gubba Pavani", id: "LIT2024035", image: "/api/placeholder/250/250" },
-    { name: "Shaik Meer G S", id: "LCS2024025", image: "/api/placeholder/250/250" }
+    { name: "Vaidik Saxena", id: "LCS2024016", image: "/src/assets/img/1.jpeg" },
+    { name: "Sumanth V U", id: "LIT2024058", image: "/src/assets/img/2.jpeg" },
+    { name: "Mozammil Ali", id: "LCS2024035", image: "/src/assets/img/3.jpeg" },
+    { name: "Chowdam Tanmai", id: "LCS2024016", image: "/src/assets/img/4.jpeg" },
+    { name: "Sandesh Raj", id: "LCS2024004", image: "/src/assets/img/5.jpeg" },
+    { name: "Vansh Tomar", id: "LCS2024043", image: "/src/assets/img/6.jpeg" },
+    { name: "Gubba Pavani", id: "LIT2024035", image: "/src/assets/img/7.jpeg" },
+    { name: "Shaik Meer G S", id: "LCS2024025", image: "/src/assets/img/8.jpeg" }
   ];
 
 
@@ -291,7 +321,7 @@ function Footer() {
         <div className="footer-main">
           <div className="footer-section branding">
             <div style={{ marginLeft: "18%" }}>
-              <img src="/api/placeholder/80/80" alt="Ann Daan Logo" className="footer-logo" />
+              <img src="/src/assets/img/Logo.png" alt="Ann Daan Logo" className="footer-logo" />
               <h3>Ann Daan</h3>
             </div>
             <p>Fighting hunger, reducing waste, building community.</p>
