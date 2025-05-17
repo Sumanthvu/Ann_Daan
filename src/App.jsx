@@ -1,20 +1,52 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import RestaurantRegistration from './components/RestaurantRegistration';
 import VolunteerForm from './components/VolunteerForm';
+import Login from './components/Login';
+import RestaurantDashboard from './components/RestaurantDashboard'; // Import the new component
 
 function App() {
+  // Check if user is authenticated
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState('');
+
+  useEffect(() => {
+    // Check if user is authenticated on component mount
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    
+    if (token) {
+      setIsAuthenticated(true);
+      setUserRole(user.role || '');
+    }
+  }, []);
+
   return (
     <Router>
       <Routes>
         <Route path="/" element={<MainContent />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/restaurant-registration" element={<RestaurantRegistration />} />
         <Route path="/volunteer-registration" element={<VolunteerForm />} />
+        
+        {/* Protected route for restaurant dashboard */}
+        <Route 
+          path="/restaurant/dashboard" 
+          element={
+            isAuthenticated && userRole === 'ROLE_RESTAURANT' ? (
+              <RestaurantDashboard />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          } 
+        />
       </Routes>
     </Router>
   );
 }
+
+// Remove the placeholder RestaurantDashboard function since we're now importing the component
 
 function MainContent() {
   const [slideIndex, setSlideIndex] = useState(1);
@@ -70,6 +102,16 @@ function MainContent() {
 }
 
 function Header() {
+  // Check if user is authenticated
+  const isAuthenticated = localStorage.getItem('token') !== null;
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/';
+  };
+
   return (
     <header>
       <div className="header-content">
@@ -85,6 +127,14 @@ function Header() {
             <li><a href="#services">Services</a></li>
             <li><a href="#about-us">About Us</a></li>
             <li><a href="#contact">Contact</a></li>
+            {isAuthenticated ? (
+              <>
+                <li><a href="/restaurant/dashboard">Dashboard</a></li>
+                <li><a href="#" onClick={handleLogout}>Logout</a></li>
+              </>
+            ) : (
+              <li><a href="/login">Login</a></li>
+            )}
           </ul>
         </nav>
       </div>
@@ -200,7 +250,7 @@ function ContributeSection() {
   const handleDonateClick = () => {
     window.open('https://food-don.vercel.app/donate', '_blank');
   };
-  
+
   const handleGetHelpClick = () => {
     window.open('https://food-don.vercel.app/get-food', '_blank');
   };
@@ -228,8 +278,16 @@ function ContributeSection() {
 function VolunteerSection() {
   const handleRestaurantClick = (e) => {
     e.preventDefault();
-    const registrationPath = `${window.location.origin}/restaurant-registration`;
-    window.location.href = registrationPath;
+    
+    // Check if user is already logged in
+    const token = localStorage.getItem('token');
+    if (token) {
+      // If logged in, redirect to dashboard
+      window.location.href = `${window.location.origin}/restaurant/dashboard`;
+    } else {
+      // If not logged in, redirect to registration
+      window.location.href = `${window.location.origin}/restaurant-registration`;
+    }
   };
 
   const handleVolunteerClick = (e) => {
@@ -306,7 +364,7 @@ function TeamSection() {
           {teamMembers.map((member, index) => (
             <div id="check" key={index}>
               <div className="team-member">
-                <img src={member.image} alt={`Team Member ${index + 1}`} />
+                <img src={member.image || "/placeholder.svg"} alt={`Team Member ${index + 1}`} />
               </div>
               <p id="pid" style={{ color: "black" }}><strong>{member.name}</strong></p>
               <p id="pid">{member.id}</p>
