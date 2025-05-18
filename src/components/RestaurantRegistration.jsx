@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // Make sure to import Link
 
 const RestaurantRegistration = () => {
   const navigate = useNavigate();
@@ -29,7 +29,6 @@ const RestaurantRegistration = () => {
       [name]: value
     });
     
-    // Clear error when field is edited
     if (errors[name]) {
       setErrors({
         ...errors,
@@ -40,263 +39,300 @@ const RestaurantRegistration = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    
-    if (!formData.username || formData.username.length < 4) {
-      newErrors.username = 'Username must be at least 4 characters';
-    }
-    
-    if (!formData.password || formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-    
-    if (!formData.name) {
-      newErrors.name = 'Restaurant name is required';
-    }
-    
-    if (!formData.address) {
-      newErrors.address = 'Address is required';
-    }
-    
-    if (!formData.city) {
-      newErrors.city = 'City is required';
-    }
-    
-    if (!formData.state) {
-      newErrors.state = 'State is required';
-    }
-    
-    if (!formData.pincode || !/^\d{6}$/.test(formData.pincode)) {
-      newErrors.pincode = 'Pincode must be 6 digits';
-    }
-    
-    if (!formData.contactNumber || !/^\d{10}$/.test(formData.contactNumber)) {
-      newErrors.contactNumber = 'Contact number must be 10 digits';
-    }
-    
-    if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Valid email is required';
-    }
-    
+    if (!formData.username || formData.username.length < 4) newErrors.username = 'Username must be at least 4 characters';
+    if (!formData.password || formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters';
+    if (!formData.name) newErrors.name = 'Restaurant name is required';
+    if (!formData.address) newErrors.address = 'Address is required';
+    if (!formData.city) newErrors.city = 'City is required';
+    if (!formData.state) newErrors.state = 'State is required';
+    if (!formData.pincode || !/^\d{6}$/.test(formData.pincode)) newErrors.pincode = 'Pincode must be 6 digits';
+    if (!formData.contactNumber || !/^\d{10}$/.test(formData.contactNumber)) newErrors.contactNumber = 'Contact number must be 10 digits';
+    if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Valid email is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-    
+    if (!validateForm()) return;
     setIsSubmitting(true);
-    
     try {
-      const response = await axios.post('http://localhost:8080/api/restaurants/register', formData);
-      
-      // Registration successful
+      await axios.post('http://localhost:8080/api/restaurants/register', formData);
       alert('Registration successful! Please login to continue.');
-      navigate('/login'); // Redirect to login page
+      navigate('/login');
     } catch (error) {
-      // Handle errors from the server
+      let errorMsg = 'Registration failed. Please try again.';
       if (error.response && error.response.data) {
-        if (typeof error.response.data === 'object') {
-          setErrors(error.response.data);
-        } else {
-          setErrors({ general: error.response.data.message || 'Registration failed. Please try again.' });
+        if (typeof error.response.data === 'object' && error.response.data.message) {
+          errorMsg = error.response.data.message;
+        } else if (typeof error.response.data === 'object' && Object.keys(error.response.data).length > 0) {
+          setErrors(prevErrors => ({ ...prevErrors, ...error.response.data }));
+          errorMsg = "Please check the errors in the form.";
+        } else if (typeof error.response.data === 'string') {
+          errorMsg = error.response.data;
         }
-      } else {
-        setErrors({ general: 'Registration failed. Please try again.' });
       }
+      setErrors(prevErrors => ({ ...prevErrors, general: errorMsg }));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Restaurant Registration</h1>
-      
-      {errors.general && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {errors.general}
+    <>
+      <div className="page-container">
+        <div className="form-card">
+          <div className="form-header">
+            {/* If you have a logo, you can place it here */}
+            {/* <img src="/src/assets/img/Logo.png" alt="Logo" className="logo" /> */}
+            <h1>Restaurant Registration</h1>
+            <p>Join our platform and start serving your delicious food!</p>
+          </div>
+
+          {errors.general && (
+            <div className="error-message general-error">
+              <strong>Error:</strong> {errors.general}
+            </div>
+          )}
+          
+          <form onSubmit={handleSubmit}>
+            <div className="form-section">
+              <h2>Account Information</h2>
+              <div className="grid-container">
+                <div className="form-group">
+                  <label htmlFor="username">Username</label>
+                  <input id="username" name="username" type="text" value={formData.username} onChange={handleChange} className={errors.username ? 'input-error' : ''} />
+                  {errors.username && <p className="error-text">{errors.username}</p>}
+                </div>
+                <div className="form-group">
+                  <label htmlFor="password">Password</label>
+                  <input id="password" name="password" type="password" value={formData.password} onChange={handleChange} className={errors.password ? 'input-error' : ''} />
+                  {errors.password && <p className="error-text">{errors.password}</p>}
+                </div>
+              </div>
+            </div>
+
+            <div className="form-section">
+              <h2>Restaurant Information</h2>
+              <div className="grid-container">
+                <div className="form-group full-width">
+                  <label htmlFor="name">Restaurant Name</label>
+                  <input id="name" name="name" type="text" value={formData.name} onChange={handleChange} className={errors.name ? 'input-error' : ''} />
+                  {errors.name && <p className="error-text">{errors.name}</p>}
+                </div>
+                <div className="form-group full-width">
+                  <label htmlFor="address">Address</label>
+                  <input id="address" name="address" type="text" value={formData.address} onChange={handleChange} className={errors.address ? 'input-error' : ''} />
+                  {errors.address && <p className="error-text">{errors.address}</p>}
+                </div>
+                <div className="form-group">
+                  <label htmlFor="city">City</label>
+                  <input id="city" name="city" type="text" value={formData.city} onChange={handleChange} className={errors.city ? 'input-error' : ''} />
+                  {errors.city && <p className="error-text">{errors.city}</p>}
+                </div>
+                <div className="form-group">
+                  <label htmlFor="state">State</label>
+                  <input id="state" name="state" type="text" value={formData.state} onChange={handleChange} className={errors.state ? 'input-error' : ''} />
+                  {errors.state && <p className="error-text">{errors.state}</p>}
+                </div>
+                <div className="form-group">
+                  <label htmlFor="pincode">Pincode</label>
+                  <input id="pincode" name="pincode" type="text" value={formData.pincode} onChange={handleChange} className={errors.pincode ? 'input-error' : ''} />
+                  {errors.pincode && <p className="error-text">{errors.pincode}</p>}
+                </div>
+                <div className="form-group">
+                  <label htmlFor="contactNumber">Contact Number</label>
+                  <input id="contactNumber" name="contactNumber" type="tel" value={formData.contactNumber} onChange={handleChange} className={errors.contactNumber ? 'input-error' : ''} />
+                  {errors.contactNumber && <p className="error-text">{errors.contactNumber}</p>}
+                </div>
+                <div className="form-group full-width">
+                  <label htmlFor="email">Email Address</label>
+                  <input id="email" name="email" type="email" value={formData.email} onChange={handleChange} className={errors.email ? 'input-error' : ''} />
+                  {errors.email && <p className="error-text">{errors.email}</p>}
+                </div>
+              </div>
+            </div>
+            
+            <div className="form-section">
+              <h2>Additional Information <span>(Optional)</span></h2>
+              <div className="grid-container">
+                <div className="form-group full-width">
+                  <label htmlFor="description">Description</label>
+                  <textarea id="description" name="description" rows="4" value={formData.description} onChange={handleChange}></textarea>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="cuisineType">Cuisine Type</label>
+                  <input id="cuisineType" name="cuisineType" type="text" placeholder="e.g., Italian, Indian" value={formData.cuisineType} onChange={handleChange} />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="openingHours">Opening Hours</label>
+                  <input id="openingHours" name="openingHours" type="text" placeholder="e.g., Mon-Fri: 9AM-10PM" value={formData.openingHours} onChange={handleChange} />
+                </div>
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <button type="submit" disabled={isSubmitting} className="submit-button">
+                {isSubmitting ? 'Registering...' : 'Register Restaurant'}
+              </button>
+            </div>
+            
+            <div className="form-footer">
+              Already have an account? <Link to="/login">Login here</Link>
+            </div>
+          </form>
         </div>
-      )}
-      
-      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Account Information */}
-          <div className="md:col-span-2">
-            <h2 className="text-xl font-semibold mb-4">Account Information</h2>
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Username</label>
-            <input
-              type="text"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded ${errors.username ? 'border-red-500' : 'border-gray-300'}`}
-            />
-            {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username}</p>}
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Password</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded ${errors.password ? 'border-red-500' : 'border-gray-300'}`}
-            />
-            {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
-          </div>
-          
-          {/* Restaurant Information */}
-          <div className="md:col-span-2">
-            <h2 className="text-xl font-semibold mb-4">Restaurant Information</h2>
-          </div>
-          
-          <div className="mb-4 md:col-span-2">
-            <label className="block text-gray-700 mb-2">Restaurant Name</label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
-            />
-            {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-          </div>
-          
-          <div className="mb-4 md:col-span-2">
-            <label className="block text-gray-700 mb-2">Address</label>
-            <input
-              type="text"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded ${errors.address ? 'border-red-500' : 'border-gray-300'}`}
-            />
-            {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">City</label>
-            <input
-              type="text"
-              name="city"
-              value={formData.city}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded ${errors.city ? 'border-red-500' : 'border-gray-300'}`}
-            />
-            {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">State</label>
-            <input
-              type="text"
-              name="state"
-              value={formData.state}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded ${errors.state ? 'border-red-500' : 'border-gray-300'}`}
-            />
-            {errors.state && <p className="text-red-500 text-sm mt-1">{errors.state}</p>}
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Pincode</label>
-            <input
-              type="text"
-              name="pincode"
-              value={formData.pincode}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded ${errors.pincode ? 'border-red-500' : 'border-gray-300'}`}
-            />
-            {errors.pincode && <p className="text-red-500 text-sm mt-1">{errors.pincode}</p>}
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Contact Number</label>
-            <input
-              type="text"
-              name="contactNumber"
-              value={formData.contactNumber}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded ${errors.contactNumber ? 'border-red-500' : 'border-gray-300'}`}
-            />
-            {errors.contactNumber && <p className="text-red-500 text-sm mt-1">{errors.contactNumber}</p>}
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Email</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
-            />
-            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-          </div>
-          
-          {/* Additional Information */}
-          <div className="md:col-span-2">
-            <h2 className="text-xl font-semibold mb-4">Additional Information (Optional)</h2>
-          </div>
-          
-          <div className="mb-4 md:col-span-2">
-            <label className="block text-gray-700 mb-2">Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded"
-              rows="3"
-            ></textarea>
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Cuisine Type</label>
-            <input
-              type="text"
-              name="cuisineType"
-              value={formData.cuisineType}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded"
-            />
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Opening Hours</label>
-            <input
-              type="text"
-              name="openingHours"
-              value={formData.openingHours}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded"
-              placeholder="e.g., Mon-Fri: 9AM-10PM"
-            />
-          </div>
-        </div>
-        
-        <div className="mt-6">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:bg-blue-400"
-          >
-            {isSubmitting ? 'Registering...' : 'Register Restaurant'}
-          </button>
-        </div>
-        
-        <div className="mt-4 text-center">
-          Already have an account? <a href="/login" className="text-blue-600 hover:underline">Login here</a>
-        </div>
-      </form>
-    </div>
+      </div>
+
+      <style jsx>{`
+        .page-container {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg, #fff1e6 0%, #ffe0c2 100%); /* Warm gradient background */
+          padding: 20px;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .form-card {
+          background-color: #ffffff;
+          padding: 30px 40px;
+          border-radius: 12px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+          width: 100%;
+          max-width: 700px; /* Adjusted for registration form */
+          margin: 20px 0;
+        }
+        .form-header {
+          text-align: center;
+          margin-bottom: 30px;
+        }
+        .form-header .logo {
+          width: 80px; /* Adjust as needed */
+          height: auto;
+          margin-bottom: 15px;
+        }
+        .form-header h1 {
+          font-size: 28px;
+          color: #D9534F; /* Primary warm color (e.g., a terracotta red/orange) */
+          margin-bottom: 8px;
+          font-weight: 600;
+        }
+        .form-header p {
+          font-size: 16px;
+          color: #555;
+        }
+        .form-section {
+          margin-bottom: 30px;
+        }
+        .form-section h2 {
+          font-size: 20px;
+          color: #333;
+          margin-bottom: 20px;
+          padding-bottom: 10px;
+          border-bottom: 1px solid #eee;
+        }
+        .form-section h2 span {
+          font-size: 0.8em;
+          font-weight: normal;
+          color: #777;
+        }
+        .grid-container {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+        @media (min-width: 600px) {
+          .grid-container {
+            grid-template-columns: 1fr 1fr;
+          }
+        }
+        .form-group {
+          margin-bottom: 5px; /* Reduced margin as gap handles spacing */
+        }
+        .form-group.full-width {
+          grid-column: 1 / -1;
+        }
+        .form-group label {
+          display: block;
+          font-size: 14px;
+          color: #444;
+          margin-bottom: 8px;
+          font-weight: 500;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="password"],
+        .form-group input[type="email"],
+        .form-group input[type="tel"],
+        .form-group textarea {
+          width: 100%;
+          padding: 12px 15px;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          box-sizing: border-box;
+          font-size: 15px;
+          transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus {
+          outline: none;
+          border-color: #D9534F; /* Primary warm color */
+          box-shadow: 0 0 0 3px rgba(217, 83, 79, 0.15);
+        }
+        .form-group input.input-error,
+        .form-group textarea.input-error {
+          border-color: #c9302c; /* Error color */
+        }
+        .error-text {
+          color: #c9302c; /* Error color */
+          font-size: 13px;
+          margin-top: 5px;
+        }
+        .error-message.general-error {
+          background-color: #f2dede;
+          color: #a94442;
+          padding: 15px;
+          border: 1px solid #ebccd1;
+          border-radius: 8px;
+          margin-bottom: 25px;
+          text-align: center;
+        }
+        .submit-button {
+          width: 100%;
+          padding: 14px 15px;
+          background-color: #D9534F; /* Primary warm color */
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-size: 17px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background-color 0.3s;
+        }
+        .submit-button:hover {
+          background-color: #C9302C; /* Darker shade for hover */
+        }
+        .submit-button:disabled {
+          background-color: #f0adad;
+          cursor: not-allowed;
+        }
+        .form-footer {
+          text-align: center;
+          margin-top: 25px;
+          font-size: 15px;
+          color: #555;
+        }
+        .form-footer a {
+          color: #D9534F; /* Primary warm color */
+          text-decoration: none;
+          font-weight: 500;
+        }
+        .form-footer a:hover {
+          text-decoration: underline;
+        }
+      `}</style>
+    </>
   );
 };
 
