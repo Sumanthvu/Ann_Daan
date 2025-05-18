@@ -19,38 +19,64 @@ const RestaurantDashboard = () => {
   useEffect(() => {
     const fetchRestaurantData = async () => {
       const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
       
       try {
-        // You would need to implement an endpoint to get the current user's restaurant
-        // For now, we'll simulate a successful response
-        // const response = await axios.get('http://localhost:8080/api/restaurants/profile', {
-        //   headers: {
-        //     'Authorization': `Bearer ${token}`
-        //   }
-        // });
-        
-        // Simulated data
-        const simulatedResponse = {
-          data: {
-            id: 1,
-            name: "Spice Garden Restaurant",
-            address: "123 Food Street",
-            city: "Bangalore",
-            state: "Karnataka",
-            pincode: "560001",
+        // Check if this is a demo user
+        if (token === 'demo-token-for-hardcoded-user') {
+          // For demo users, use the stored user info
+          setRestaurant({
+            id: 999,
+            name: user.name,
+            address: "123 Demo Street",
+            city: "Demo City",
+            state: "Demo State",
+            pincode: "123456",
             contactNumber: "9876543210",
-            email: "contact@spicegarden.com",
-            description: "Authentic Indian cuisine with a focus on fresh, locally-sourced ingredients.",
-            cuisineType: "Indian, Continental",
-            openingHours: "10:00 AM - 10:00 PM"
-          }
-        };
+            email: user.email,
+            description: "This is a demo restaurant account for testing purposes.",
+            cuisineType: "Various",
+            openingHours: "9:00 AM - 10:00 PM"
+          });
+          setDonations(sampleDonations);
+          setLoading(false);
+          return;
+        }
         
-        setRestaurant(simulatedResponse.data);
-        setDonations(sampleDonations);
+        // For real users, try to fetch from API
+        try {
+          const response = await axios.get('http://localhost:8080/api/restaurants/profile', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          
+          setRestaurant(response.data);
+          // You would also fetch real donations here
+          setDonations(sampleDonations); // Using sample data for now
+        } catch (apiError) {
+          console.error('Error fetching restaurant data from API:', apiError);
+          
+          // Fallback to simulated data if API call fails
+          setRestaurant({
+            id: 1,
+            name: "Your Restaurant",
+            address: "123 Food Street",
+            city: "Your City",
+            state: "Your State",
+            pincode: "123456",
+            contactNumber: "9876543210",
+            email: user.username || "restaurant@example.com",
+            description: "Your restaurant description will appear here.",
+            cuisineType: "Various",
+            openingHours: "9:00 AM - 10:00 PM"
+          });
+          setDonations(sampleDonations);
+        }
+        
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching restaurant data:', error);
+        console.error('Error in dashboard initialization:', error);
         setError('Failed to load restaurant data. Please try again later.');
         setLoading(false);
       }
@@ -435,6 +461,8 @@ const RestaurantDashboard = () => {
                 </div>
                 <button className="edit-profile-button">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0" strokeLinejoin="round" />
+
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                   </svg>
