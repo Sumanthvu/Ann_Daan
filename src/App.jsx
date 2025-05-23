@@ -13,23 +13,44 @@ function App() {
   // Check if user is authenticated
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userRole, setUserRole] = useState("")
+  const [user, setUser] = useState(null)
 
   useEffect(() => {
     // Check if user is authenticated on component mount
-    const token = localStorage.getItem("token")
-    const user = JSON.parse(localStorage.getItem("user") || "{}")
+    const userData = localStorage.getItem("user")
 
-    if (token) {
+    if (userData) {
+      const parsedUser = JSON.parse(userData)
       setIsAuthenticated(true)
-      setUserRole(user.role || "")
+      setUserRole(parsedUser.role || "")
+      setUser(parsedUser)
     }
   }, [])
+
+  // Function to handle login success
+  const handleLoginSuccess = (userData) => {
+    setIsAuthenticated(true)
+    setUserRole(userData.role || "")
+    setUser(userData)
+    localStorage.setItem("user", JSON.stringify(userData))
+  }
+
+  // Function to handle logout
+  const handleLogout = () => {
+    setIsAuthenticated(false)
+    setUserRole("")
+    setUser(null)
+    localStorage.removeItem("user")
+  }
 
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<MainContent />} />
-        <Route path="/login" element={<Login />} />
+        <Route
+          path="/"
+          element={<MainContent isAuthenticated={isAuthenticated} user={user} onLogout={handleLogout} />}
+        />
+        <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
         <Route path="/restaurant-registration" element={<RestaurantRegistration />} />
         <Route path="/volunteer-registration" element={<VolunteerForm />} />
         <Route path="/reset-password" element={<ResetPassword />} />
@@ -38,8 +59,8 @@ function App() {
         <Route
           path="/restaurant/dashboard"
           element={
-            isAuthenticated || localStorage.getItem("token") === "demo-token-for-hardcoded-user" ? (
-              <RestaurantDashboard />
+            isAuthenticated ? (
+              <RestaurantDashboard user={user} onLogout={handleLogout} />
             ) : (
               <Navigate to="/login" replace />
             )
@@ -50,7 +71,7 @@ function App() {
   )
 }
 
-function MainContent() {
+function MainContent({ isAuthenticated, user, onLogout }) {
   const [slideIndex, setSlideIndex] = useState(1)
 
   // Function to show slides
@@ -89,13 +110,13 @@ function MainContent() {
 
   return (
     <div className="App">
-      <Header />
+      <Header isAuthenticated={isAuthenticated} user={user} onLogout={onLogout} />
       <SliderSection plusSlides={plusSlides} />
       <WelcomeSection />
       <MissionSection />
       <TestimonialsSection />
       <ContributeSection />
-      <VolunteerSection />
+      <VolunteerSection isAuthenticated={isAuthenticated} />
       <HowItWorksSection />
       <TeamSection />
       <Footer />
@@ -103,14 +124,9 @@ function MainContent() {
   )
 }
 
-function Header() {
-  // Check if user is authenticated
-  const isAuthenticated = localStorage.getItem("token") !== null
-  const user = JSON.parse(localStorage.getItem("user") || "{}")
-
+function Header({ isAuthenticated, user, onLogout }) {
   const handleLogout = () => {
-    localStorage.removeItem("token")
-    localStorage.removeItem("user")
+    onLogout()
     window.location.href = "/"
   }
 
@@ -316,13 +332,12 @@ function ContributeSection() {
   )
 }
 
-function VolunteerSection() {
+function VolunteerSection({ isAuthenticated }) {
   const handleRestaurantClick = (e) => {
     e.preventDefault()
 
     // Check if user is already logged in
-    const token = localStorage.getItem("token")
-    if (token) {
+    if (isAuthenticated) {
       // If logged in, redirect to dashboard
       window.location.href = `${window.location.origin}/restaurant/dashboard`
     } else {
@@ -345,7 +360,7 @@ function VolunteerSection() {
           <img src="/src/api/i3.jpeg" id="imgid1" alt="Restaurant Registration" />
         </div>
         <a onClick={handleRestaurantClick} className="btn" style={{ cursor: "pointer" }}>
-          Register
+          {isAuthenticated ? "Dashboard" : "Register"}
         </a>
       </div>
       <div className="container2">
