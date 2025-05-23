@@ -1,599 +1,496 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+"use client"
 
-// Hardcoded restaurant users for demo purposes
-const DEMO_USERS = [
-  {
-    name: "Tasty Bites",
-    email: "tasty@bites.com",
-    password: "tasty123"
-  },
-  {
-    name: "Spicy Treat",
-    email: "spicy@treat.com",
-    password: "spicy123"
-  }
-];
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import axios from "axios"
 
 const RestaurantRegistration = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    address: '',
-    city: '',
-    state: '',
-    pincode: '',
-    contactNumber: '',
-    description: '',
-    cuisineType: '',
-    openingHours: ''
-  });
-  
-  const [errors, setErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+    restaurantName: "",
+    ownerName: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
+    address: "",
+    city: "",
+    state: "",
+    pincode: "",
+    description: "",
+  })
+
+  const [errors, setErrors] = useState({})
+  const [otpSent, setOtpSent] = useState(false)
+  const [otp, setOtp] = useState("")
+  const [enteredOtp, setEnteredOtp] = useState("")
+  const [loading, setLoading] = useState(false)
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
     setFormData({
       ...formData,
-      [name]: value
-    });
-    
-    // Clear field-specific error when user types
-    if (errors[name]) {
-      setErrors({
-        ...errors,
-        [name]: ''
-      });
-    }
-  };
+      [name]: value,
+    })
+  }
 
   const validateForm = () => {
-    const newErrors = {};
-    
-    // Basic validation
-    if (!formData.name.trim()) newErrors.name = 'Restaurant name is required';
-    if (!formData.email.trim()) newErrors.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
-    
-    if (!formData.password) newErrors.password = 'Password is required';
-    else if (formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters';
-    
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-    
-    if (!formData.contactNumber.trim()) newErrors.contactNumber = 'Contact number is required';
-    if (!formData.address.trim()) newErrors.address = 'Address is required';
-    if (!formData.city.trim()) newErrors.city = 'City is required';
-    if (!formData.state.trim()) newErrors.state = 'State is required';
-    if (!formData.pincode.trim()) newErrors.pincode = 'Pincode is required';
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    const newErrors = {}
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
-    
-    setIsLoading(true);
-    setErrorMessage('');
-    setSuccessMessage('');
-    
-    // Check if the registration matches any of our hardcoded demo users
-    const isDemoUser = DEMO_USERS.some(
-      user => user.name === formData.name && 
-              user.email === formData.email && 
-              user.password === formData.password
-    );
-    
-    if (isDemoUser) {
-      // For demo users, simulate a successful registration
-      setSuccessMessage('Registration successful! You can now log in with your credentials.');
-      
-      // Redirect to login page after a short delay
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
-    } else {
-      // For non-demo users, proceed with the normal backend registration
+    if (!formData.restaurantName) newErrors.restaurantName = "Restaurant name is required"
+    if (!formData.ownerName) newErrors.ownerName = "Owner name is required"
+
+    if (!formData.email) {
+      newErrors.email = "Email is required"
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Email is invalid"
+    }
+
+    if (!formData.phone) {
+      newErrors.phone = "Phone number is required"
+    } else if (!/^\d{10}$/.test(formData.phone)) {
+      newErrors.phone = "Phone number must be 10 digits"
+    }
+
+    if (!formData.password) {
+      newErrors.password = "Password is required"
+    } else if (formData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters"
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match"
+    }
+
+    if (!formData.address) newErrors.address = "Address is required"
+    if (!formData.city) newErrors.city = "City is required"
+    if (!formData.state) newErrors.state = "State is required"
+    if (!formData.pincode) newErrors.pincode = "Pincode is required"
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const sendOtp = async () => {
+    if (validateForm()) {
       try {
-        // Create user registration data
-        const registrationData = {
-          username: formData.email, // Using email as username
+        setLoading(true)
+        // Send OTP to the provided email
+        const response = await axios.post("http://localhost:8080/api/auth/send-otp", {
           email: formData.email,
-          password: formData.password,
-          role: ["restaurant"] // Specify role as restaurant
-        };
-        
-        // Register user first
-        const userResponse = await axios.post('http://localhost:8080/api/auth/signup', registrationData);
-        
-        if (userResponse.data) {
-          // Then create restaurant profile
-          const restaurantData = {
-            name: formData.name,
-            address: formData.address,
-            city: formData.city,
-            state: formData.state,
-            pincode: formData.pincode,
-            contactNumber: formData.contactNumber,
-            email: formData.email,
-            description: formData.description || '',
-            cuisineType: formData.cuisineType || '',
-            openingHours: formData.openingHours || '',
-            userId: userResponse.data.id // Link to user account
-          };
-          
-          await axios.post('http://localhost:8080/api/restaurants', restaurantData);
-          
-          setSuccessMessage('Registration successful! You can now log in with your credentials.');
-          
-          // Redirect to login page after a short delay
-          setTimeout(() => {
-            navigate('/login');
-          }, 2000);
+          phone: formData.phone,
+        })
+
+        if (response.data.success) {
+          setOtpSent(true)
+          setOtp(response.data.otp) // In a real app, the OTP would not be returned to the frontend
+          alert("OTP sent to your email and phone. Please verify.")
+        } else {
+          alert("Failed to send OTP. Please try again.")
         }
       } catch (error) {
-        console.error('Registration error:', error);
-        if (error.response && error.response.data) {
-          setErrorMessage(error.response.data.message || 'Registration failed. Please try again.');
-        } else {
-          setErrorMessage('Registration failed. Please try again later.');
-        }
+        console.error("Error sending OTP:", error)
+        alert("Error sending OTP. Please try again later.")
+      } finally {
+        setLoading(false)
       }
     }
-    
-    setIsLoading(false);
-  };
+  }
+
+  const verifyOtp = async () => {
+    if (!enteredOtp) {
+      alert("Please enter the OTP")
+      return
+    }
+
+    try {
+      setLoading(true)
+      // Verify OTP
+      const response = await axios.post("http://localhost:8080/api/auth/verify-otp", {
+        email: formData.email,
+        otp: enteredOtp,
+      })
+
+      if (response.data.success) {
+        // If OTP is verified, register the restaurant
+        registerRestaurant()
+      } else {
+        alert("Invalid OTP. Please try again.")
+      }
+    } catch (error) {
+      console.error("Error verifying OTP:", error)
+      alert("Error verifying OTP. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const registerRestaurant = async () => {
+    try {
+      setLoading(true)
+      // Register the restaurant
+      const response = await axios.post("http://localhost:8080/api/restaurants/register", formData)
+
+      if (response.data.success) {
+        alert("Restaurant registered successfully!")
+        // Redirect to login page after successful registration
+        navigate("/login")
+      } else {
+        alert("Failed to register restaurant. Please try again.")
+      }
+    } catch (error) {
+      console.error("Error registering restaurant:", error)
+      alert("Error registering restaurant. Please try again later.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (!otpSent) {
+      sendOtp()
+    } else {
+      verifyOtp()
+    }
+  }
 
   return (
-    <div className="registration-page">
-      <div className="registration-container">
-        <div className="registration-header">
-          <img src="/src/assets/img/Logo.png" alt="Ann Daan Logo" className="registration-logo" />
-          <h1>Restaurant Registration</h1>
-          <p>Join our network of restaurants fighting food waste and hunger</p>
-        </div>
-        
-        {errorMessage && (
-          <div className="error-message">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="12"></line>
-              <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
-            <span>{errorMessage}</span>
-          </div>
-        )}
-        
-        {successMessage && (
-          <div className="success-message">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-              <polyline points="22 4 12 14.01 9 11.01"></polyline>
-            </svg>
-            <span>{successMessage}</span>
-          </div>
-        )}
-        
-        <form onSubmit={handleSubmit} className="registration-form">
-          <div className="form-section">
-            <h2>Restaurant Information</h2>
-            
-            <div className="form-row">
+    <div className="registration-container">
+      <div className="registration-form-container">
+        <h2>Restaurant Registration</h2>
+        <form onSubmit={handleSubmit}>
+          {!otpSent ? (
+            <>
               <div className="form-group">
-                <label htmlFor="name">Restaurant Name*</label>
+                <label>Restaurant Name</label>
                 <input
                   type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
+                  name="restaurantName"
+                  value={formData.restaurantName}
                   onChange={handleChange}
-                  className={errors.name ? 'error' : ''}
+                  className={errors.restaurantName ? "error" : ""}
                 />
-                {errors.name && <span className="error-text">{errors.name}</span>}
+                {errors.restaurantName && <span className="error-message">{errors.restaurantName}</span>}
               </div>
-              
+
               <div className="form-group">
-                <label htmlFor="email">Email Address*</label>
+                <label>Owner Name</label>
+                <input
+                  type="text"
+                  name="ownerName"
+                  value={formData.ownerName}
+                  onChange={handleChange}
+                  className={errors.ownerName ? "error" : ""}
+                />
+                {errors.ownerName && <span className="error-message">{errors.ownerName}</span>}
+              </div>
+
+              <div className="form-group">
+                <label>Email</label>
                 <input
                   type="email"
-                  id="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className={errors.email ? 'error' : ''}
+                  className={errors.email ? "error" : ""}
                 />
-                {errors.email && <span className="error-text">{errors.email}</span>}
+                {errors.email && <span className="error-message">{errors.email}</span>}
               </div>
-            </div>
-            
-            <div className="form-row">
+
               <div className="form-group">
-                <label htmlFor="password">Password*</label>
+                <label>Phone</label>
+                <input
+                  type="text"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className={errors.phone ? "error" : ""}
+                />
+                {errors.phone && <span className="error-message">{errors.phone}</span>}
+              </div>
+
+              <div className="form-group">
+                <label>Password</label>
                 <input
                   type="password"
-                  id="password"
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className={errors.password ? 'error' : ''}
+                  className={errors.password ? "error" : ""}
                 />
-                {errors.password && <span className="error-text">{errors.password}</span>}
+                {errors.password && <span className="error-message">{errors.password}</span>}
               </div>
-              
+
               <div className="form-group">
-                <label htmlFor="confirmPassword">Confirm Password*</label>
+                <label>Confirm Password</label>
                 <input
                   type="password"
-                  id="confirmPassword"
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={errors.confirmPassword ? 'error' : ''}
+                  className={errors.confirmPassword ? "error" : ""}
                 />
-                {errors.confirmPassword && <span className="error-text">{errors.confirmPassword}</span>}
+                {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
               </div>
-            </div>
-            
-            <div className="form-row">
+
               <div className="form-group">
-                <label htmlFor="contactNumber">Contact Number*</label>
+                <label>Address</label>
                 <input
                   type="text"
-                  id="contactNumber"
-                  name="contactNumber"
-                  value={formData.contactNumber}
+                  name="address"
+                  value={formData.address}
                   onChange={handleChange}
-                  className={errors.contactNumber ? 'error' : ''}
+                  className={errors.address ? "error" : ""}
                 />
-                {errors.contactNumber && <span className="error-text">{errors.contactNumber}</span>}
+                {errors.address && <span className="error-message">{errors.address}</span>}
               </div>
-              
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>City</label>
+                  <input
+                    type="text"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                    className={errors.city ? "error" : ""}
+                  />
+                  {errors.city && <span className="error-message">{errors.city}</span>}
+                </div>
+
+                <div className="form-group">
+                  <label>State</label>
+                  <input
+                    type="text"
+                    name="state"
+                    value={formData.state}
+                    onChange={handleChange}
+                    className={errors.state ? "error" : ""}
+                  />
+                  {errors.state && <span className="error-message">{errors.state}</span>}
+                </div>
+
+                <div className="form-group">
+                  <label>Pincode</label>
+                  <input
+                    type="text"
+                    name="pincode"
+                    value={formData.pincode}
+                    onChange={handleChange}
+                    className={errors.pincode ? "error" : ""}
+                  />
+                  {errors.pincode && <span className="error-message">{errors.pincode}</span>}
+                </div>
+              </div>
+
               <div className="form-group">
-                <label htmlFor="cuisineType">Cuisine Type</label>
+                <label>Description</label>
+                <textarea name="description" value={formData.description} onChange={handleChange} rows="4"></textarea>
+              </div>
+
+              <button type="submit" className="register-button" disabled={loading}>
+                {loading ? "Sending OTP..." : "Send OTP"}
+              </button>
+            </>
+          ) : (
+            <div className="otp-verification">
+              <h3>OTP Verification</h3>
+              <p>An OTP has been sent to your email and phone. Please enter it below to verify.</p>
+
+              <div className="form-group">
+                <label>Enter OTP</label>
                 <input
                   type="text"
-                  id="cuisineType"
-                  name="cuisineType"
-                  value={formData.cuisineType}
-                  onChange={handleChange}
+                  value={enteredOtp}
+                  onChange={(e) => setEnteredOtp(e.target.value)}
+                  placeholder="Enter 6-digit OTP"
+                  maxLength="6"
                 />
               </div>
+
+              <button type="submit" className="register-button" disabled={loading}>
+                {loading ? "Verifying..." : "Verify & Register"}
+              </button>
+
+              <p className="resend-otp">
+                Didn't receive OTP?{" "}
+                <button type="button" onClick={sendOtp} disabled={loading}>
+                  Resend OTP
+                </button>
+              </p>
             </div>
-            
-            <div className="form-group full-width">
-              <label htmlFor="openingHours">Opening Hours</label>
-              <input
-                type="text"
-                id="openingHours"
-                name="openingHours"
-                value={formData.openingHours}
-                onChange={handleChange}
-                placeholder="e.g., Mon-Fri: 9AM-10PM, Sat-Sun: 10AM-11PM"
-              />
-            </div>
-          </div>
-          
-          <div className="form-section">
-            <h2>Address Information</h2>
-            
-            <div className="form-group full-width">
-              <label htmlFor="address">Street Address*</label>
-              <input
-                type="text"
-                id="address"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                className={errors.address ? 'error' : ''}
-              />
-              {errors.address && <span className="error-text">{errors.address}</span>}
-            </div>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="city">City*</label>
-                <input
-                  type="text"
-                  id="city"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleChange}
-                  className={errors.city ? 'error' : ''}
-                />
-                {errors.city && <span className="error-text">{errors.city}</span>}
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="state">State*</label>
-                <input
-                  type="text"
-                  id="state"
-                  name="state"
-                  value={formData.state}
-                  onChange={handleChange}
-                  className={errors.state ? 'error' : ''}
-                />
-                {errors.state && <span className="error-text">{errors.state}</span>}
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="pincode">Pincode*</label>
-                <input
-                  type="text"
-                  id="pincode"
-                  name="pincode"
-                  value={formData.pincode}
-                  onChange={handleChange}
-                  className={errors.pincode ? 'error' : ''}
-                />
-                {errors.pincode && <span className="error-text">{errors.pincode}</span>}
-              </div>
-            </div>
-          </div>
-          
-          <div className="form-section">
-            <h2>Additional Information</h2>
-            
-            <div className="form-group full-width">
-              <label htmlFor="description">Restaurant Description</label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows="4"
-                placeholder="Tell us about your restaurant, the type of food you serve, and your commitment to reducing food waste..."
-              ></textarea>
-            </div>
-          </div>
-          
-          <div className="form-actions">
-            <button type="button" className="cancel-button" onClick={() => navigate('/')}>
-              Cancel
-            </button>
-            <button type="submit" className="submit-button" disabled={isLoading}>
-              {isLoading ? (
-                <span className="loading-spinner"></span>
-              ) : (
-                'Register Restaurant'
-              )}
-            </button>
-          </div>
-          
-          <div className="login-link">
-            Already registered? <a href="/login">Login here</a>
-          </div>
+          )}
         </form>
+
+        <div className="login-link">
+          Already have an account? <a href="/login">Login</a>
+        </div>
       </div>
-      
       <style jsx>{`
-        .registration-page {
-          min-height: 100vh;
-          background-color: #f8f9fa;
-          padding: 40px 20px;
-        }
-        
         .registration-container {
-          max-width: 900px;
-          margin: 0 auto;
-          background: white;
-          border-radius: 12px;
-          box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-          padding: 40px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-height: 100vh;
+          padding: 20px;
+          background-color: #f5f5f5;
         }
-        
-        .registration-header {
+
+        .registration-form-container {
+          width: 100%;
+          max-width: 800px;
+          background-color: white;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          padding: 30px;
+        }
+
+        .registration-form-container h2 {
           text-align: center;
           margin-bottom: 30px;
-        }
-        
-        .registration-logo {
-          width: 80px;
-          height: 80px;
-          margin-bottom: 20px;
-        }
-        
-        .registration-header h1 {
-          font-size: 28px;
           color: #333;
-          margin-bottom: 10px;
         }
-        
-        .registration-header p {
-          color: #666;
-          font-size: 16px;
-        }
-        
-        .error-message, .success-message {
-          display: flex;
-          align-items: center;
-          padding: 12px;
-          border-radius: 6px;
-          margin-bottom: 20px;
-        }
-        
-        .error-message {
-          background-color: #fee2e2;
-          color: #b91c1c;
-        }
-        
-        .success-message {
-          background-color: #dcfce7;
-          color: #166534;
-        }
-        
-        .error-message svg, .success-message svg {
-          margin-right: 10px;
-          flex-shrink: 0;
-        }
-        
-        .registration-form {
-          margin-top: 20px;
-        }
-        
-        .form-section {
-          margin-bottom: 30px;
-          padding-bottom: 20px;
-          border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .form-section h2 {
-          font-size: 20px;
-          color: #333;
-          margin-bottom: 20px;
-        }
-        
-        .form-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 20px;
-          margin-bottom: 20px;
-        }
-        
+
         .form-group {
-          flex: 1;
-          min-width: 250px;
-        }
-        
-        .form-group.full-width {
-          width: 100%;
           margin-bottom: 20px;
         }
-        
+
         .form-group label {
           display: block;
           margin-bottom: 8px;
           font-weight: 500;
-          color: #333;
+          color: #555;
         }
-        
-        .form-group input, .form-group textarea {
+
+        .form-group input,
+        .form-group textarea {
           width: 100%;
           padding: 12px;
           border: 1px solid #ddd;
-          border-radius: 6px;
+          border-radius: 4px;
           font-size: 16px;
           transition: border-color 0.3s;
         }
-        
-        .form-group input:focus, .form-group textarea:focus {
-          border-color: #4f46e5;
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+          border-color: #4caf50;
           outline: none;
-          box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
         }
-        
-        .form-group input.error, .form-group textarea.error {
-          border-color: #ef4444;
+
+        .form-group input.error,
+        .form-group textarea.error {
+          border-color: #f44336;
         }
-        
-        .error-text {
-          display: block;
-          color: #ef4444;
+
+        .error-message {
+          color: #f44336;
           font-size: 14px;
           margin-top: 5px;
+          display: block;
         }
-        
-        .form-actions {
+
+        .form-row {
           display: flex;
-          justify-content: flex-end;
           gap: 15px;
-          margin-top: 30px;
         }
-        
-        .cancel-button, .submit-button {
-          padding: 12px 24px;
-          border-radius: 6px;
+
+        .form-row .form-group {
+          flex: 1;
+        }
+
+        .register-button {
+          width: 100%;
+          padding: 14px;
+          background-color: #4caf50;
+          color: white;
+          border: none;
+          border-radius: 4px;
           font-size: 16px;
           font-weight: 500;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: background-color 0.3s;
         }
-        
-        .cancel-button {
-          background-color: white;
-          color: #6b7280;
-          border: 1px solid #d1d5db;
+
+        .register-button:hover {
+          background-color: #388e3c;
         }
-        
-        .cancel-button:hover {
-          background-color: #f9fafb;
-        }
-        
-        .submit-button {
-          background-color: #4f46e5;
-          color: white;
-          border: none;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-width: 180px;
-        }
-        
-        .submit-button:hover {
-          background-color: #4338ca;
-        }
-        
-        .submit-button:disabled {
-          background-color: #a5a5a5;
+
+        .register-button:disabled {
+          background-color: #9e9e9e;
           cursor: not-allowed;
         }
-        
-        .loading-spinner {
-          width: 20px;
-          height: 20px;
-          border: 3px solid rgba(255, 255, 255, 0.3);
-          border-radius: 50%;
-          border-top-color: white;
-          animation: spin 1s ease-in-out infinite;
-        }
-        
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        
+
         .login-link {
           text-align: center;
           margin-top: 20px;
-          color: #6b7280;
+          font-size: 16px;
         }
-        
+
         .login-link a {
-          color: #4f46e5;
+          color: #4caf50;
           text-decoration: none;
+          font-weight: 500;
         }
-        
+
         .login-link a:hover {
           text-decoration: underline;
         }
-        
+
+        .otp-verification {
+          text-align: center;
+          padding: 20px 0;
+        }
+
+        .otp-verification h3 {
+          margin-bottom: 15px;
+          color: #333;
+        }
+
+        .otp-verification p {
+          margin-bottom: 20px;
+          color: #666;
+        }
+
+        .resend-otp {
+          margin-top: 15px;
+          font-size: 14px;
+        }
+
+        .resend-otp button {
+          background: none;
+          border: none;
+          color: #4caf50;
+          font-weight: 500;
+          cursor: pointer;
+          text-decoration: underline;
+          padding: 0;
+          font-size: 14px;
+        }
+
+        .resend-otp button:hover {
+          color: #388e3c;
+        }
+
+        .resend-otp button:disabled {
+          color: #9e9e9e;
+          cursor: not-allowed;
+        }
+
         @media (max-width: 768px) {
-          .registration-container {
+          .registration-form-container {
             padding: 20px;
           }
-          
+
           .form-row {
             flex-direction: column;
-            gap: 15px;
-          }
-          
-          .form-group {
-            width: 100%;
+            gap: 0;
           }
         }
       `}</style>
     </div>
-  );
-};
+  )
+}
 
-export default RestaurantRegistration;
+export default RestaurantRegistration

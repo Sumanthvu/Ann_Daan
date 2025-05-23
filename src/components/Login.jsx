@@ -1,507 +1,527 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom'; // Added Link for completeness
-import axios from 'axios';
+"use client"
 
-// Hardcoded restaurant users for demo purposes
-const DEMO_USERS = [
-  {
-    name: "Tasty Bites",
-    email: "tasty@bites.com",
-    username: "tasty@bites.com", // Using email as username
-    password: "tasty123",
-    role: "ROLE_RESTAURANT" // Ensure this role matches your condition
-  },
-  {
-    name: "Spicy Treat",
-    email: "spicy@treat.com",
-    username: "spicy@treat.com", // Using email as username
-    password: "spicy123",
-    role: "ROLE_RESTAURANT" // Ensure this role matches your condition
-  }
-];
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import axios from "axios"
 
 const Login = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
+  const [loginMethod, setLoginMethod] = useState("email") // 'email' or 'phone'
   const [formData, setFormData] = useState({
-    username: '', // This will hold the email input
-    password: ''
-  });
-  
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+    email: "",
+    phone: "",
+    password: "",
+  })
+  const [errors, setErrors] = useState({})
+  const [otpSent, setOtpSent] = useState(false)
+  const [enteredOtp, setEnteredOtp] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [forgotPassword, setForgotPassword] = useState(false)
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
     setFormData({
       ...formData,
-      [name]: value
-    });
-  };
+      [name]: value,
+    })
+  }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccessMessage('');
-    setIsLoading(true); // Set loading to true at the beginning
-    
-    // Check if the credentials match any of our hardcoded demo users
-    const demoUser = DEMO_USERS.find(
-      user => user.username === formData.username && user.password === formData.password
-    );
-    
-    if (demoUser) {
-      console.log("Demo user found:", demoUser);
-      // For demo users, simulate a successful login
-      localStorage.setItem('token', 'demo-token-for-hardcoded-user'); // Use a distinct demo token
-      localStorage.setItem('user', JSON.stringify({
-        username: demoUser.username, // This is the email
-        name: demoUser.name,
-        email: demoUser.email,
-        role: demoUser.role 
-      }));
-      
-      setSuccessMessage('Login successful! Redirecting to dashboard...');
-      
-      // Redirect after a short delay to show the success message
-      // No need to check role here if all demo users are restaurants for this specific redirection path
-      setTimeout(() => {
-        console.log("Navigating to /restaurant/dashboard for demo user.");
-        navigate('/restaurant/dashboard');
-        setIsLoading(false); // Reset loading after navigation is initiated
-      }, 1000); // Increased delay to 1 second
+  const validateForm = () => {
+    const newErrors = {}
+
+    if (loginMethod === "email") {
+      if (!formData.email) {
+        newErrors.email = "Email is required"
+      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+        newErrors.email = "Email is invalid"
+      }
     } else {
-      console.log("Demo user not found, attempting API login.");
-      // For non-demo users, proceed with the normal backend authentication
-      try {
-        const response = await axios.post('http://localhost:8080/api/auth/login', formData);
-        console.log("API Login Response:", response.data);
-        
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify({
-          username: response.data.username, // Assuming backend returns username
-          role: response.data.role
-        }));
-        
-        setSuccessMessage('Login successful! Redirecting...');
-        
-        // Redirect based on role
-        if (response.data.role === 'ROLE_RESTAURANT') {
-          console.log("API user role is ROLE_RESTAURANT. Navigating to dashboard.");
-          setTimeout(() => {
-            navigate('/restaurant/dashboard');
-            setIsLoading(false); // Reset loading after navigation
-          }, 1000); // Increased delay
-        } else {
-          console.log(`API user role is ${response.data.role}. Navigating to /. `);
-          setTimeout(() => {
-            navigate('/');
-            setIsLoading(false); // Reset loading after navigation
-          }, 1000); // Increased delay
-        }
-      } catch (err) { 
-        console.error("API Login Error:", err.response || err);
-        if (err.response && err.response.data) {
-          setError(err.response.data.message || 'Invalid username or password');
-        } else {
-          setError('Login failed. Please try again.');
-        }
-        setIsLoading(false); // Reset loading on error
+      if (!formData.phone) {
+        newErrors.phone = "Phone number is required"
+      } else if (!/^\d{10}$/.test(formData.phone)) {
+        newErrors.phone = "Phone number must be 10 digits"
       }
     }
-  };
+
+    if (!forgotPassword && !formData.password) {
+      newErrors.password = "Password is required"
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const sendOtp = async () => {
+    if (validateForm()) {
+      try {
+        setLoading(true)
+        // Send OTP to the provided email or phone
+        const payload = loginMethod === "email" ? { email: formData.email } : { phone: formData.phone }
+
+        const response = await axios.post("http://localhost:8080/api/auth/send-otp", payload)
+
+        if (response.data.success) {
+          setOtpSent(true)
+          alert("OTP sent. Please verify.")
+        } else {
+          alert("Failed to send OTP. Please try again.")
+        }
+      } catch (error) {
+        console.error("Error sending OTP:", error)
+        alert("Error sending OTP. Please try again later.")
+      } finally {
+        setLoading(false)
+      }
+    }
+  }
+
+  const verifyOtp = async () => {
+    if (!enteredOtp) {
+      alert("Please enter the OTP")
+      return
+    }
+
+    try {
+      setLoading(true)
+      // Verify OTP
+      const payload = {
+        otp: enteredOtp,
+        ...(loginMethod === "email" ? { email: formData.email } : { phone: formData.phone }),
+      }
+
+      const response = await axios.post("http://localhost:8080/api/auth/verify-otp", payload)
+
+      if (response.data.success) {
+        if (forgotPassword) {
+          // Navigate to reset password page
+          navigate("/reset-password", {
+            state: {
+              verified: true,
+              ...(loginMethod === "email" ? { email: formData.email } : { phone: formData.phone }),
+            },
+          })
+        } else {
+          // If OTP is verified, proceed with login
+          loginUser()
+        }
+      } else {
+        alert("Invalid OTP. Please try again.")
+      }
+    } catch (error) {
+      console.error("Error verifying OTP:", error)
+      alert("Error verifying OTP. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loginUser = async () => {
+    if (forgotPassword) {
+      // This is handled in verifyOtp
+      return
+    }
+
+    try {
+      setLoading(true)
+      // Login the user
+      const payload = {
+        ...(loginMethod === "email" ? { email: formData.email } : { phone: formData.phone }),
+        password: formData.password,
+      }
+
+      const response = await axios.post("http://localhost:8080/api/auth/login", payload)
+
+      if (response.data.success) {
+        // Store token in localStorage
+        localStorage.setItem("token", response.data.token)
+        localStorage.setItem("user", JSON.stringify(response.data.user))
+
+        alert("Login successful!")
+        // Redirect to restaurant dashboard after successful login
+        navigate("/restaurant/dashboard")
+      } else {
+        alert("Invalid credentials. Please try again.")
+      }
+    } catch (error) {
+      console.error("Error logging in:", error)
+      alert("Error logging in. Please try again later.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+
+    if (forgotPassword) {
+      if (!otpSent) {
+        sendOtp()
+      } else {
+        verifyOtp()
+      }
+    } else {
+      if (loginMethod === "otp") {
+        if (!otpSent) {
+          sendOtp()
+        } else {
+          verifyOtp()
+        }
+      } else {
+        // Regular email/phone + password login
+        if (validateForm()) {
+          loginUser()
+        }
+      }
+    }
+  }
+
+  const toggleLoginMethod = (method) => {
+    setLoginMethod(method)
+    setOtpSent(false)
+    setEnteredOtp("")
+    setErrors({})
+  }
+
+  const handleForgotPassword = () => {
+    setForgotPassword(true)
+    setOtpSent(false)
+    setEnteredOtp("")
+  }
 
   return (
-    <> {/* Added Fragment because <style jsx> needs a single root from the component's render */}
-      <div className="login-page">
-        <div className="login-container">
-          <div className="login-content">
-            <div className="login-left">
-              <div className="login-header">
-                <img src="/src/assets/img/Logo.png" alt="Ann Daan Logo" className="login-logo" />
-                <h1>Welcome Back</h1>
-                <p>Sign in to your restaurant account to manage your food donations and make a difference.</p>
-              </div>
-              
-              {error && (
-                <div className="error-message">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="message-icon">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="8" x2="12" y2="12"></line>
-                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                  </svg>
-                  <span>{error}</span>
-                </div>
-              )}
-              
-              {successMessage && (
-                <div className="success-message">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="message-icon">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                  </svg>
-                  <span>{successMessage}</span>
-                </div>
-              )}
-              
-              <form onSubmit={handleSubmit} className="login-form">
-                <div className="form-group">
-                  <label htmlFor="username">Email</label> {/* Changed label to Email */}
-                  <div className="input-wrapper">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="input-icon">
-                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                      <polyline points="22,6 12,13 2,6"></polyline>
-                    </svg>
-                    <input
-                      type="text" // Changed to text, can be email but text is fine for username field
-                      id="username"
-                      name="username" // This matches formData.username which expects email for demo users
-                      value={formData.username}
-                      onChange={handleChange}
-                      placeholder="Enter your email"
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="password">Password</label>
-                  <div className="input-wrapper">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="input-icon">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                    </svg>
-                    <input
-                      type="password"
-                      id="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      placeholder="Enter your password"
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div className="form-options">
-                  <div className="remember-me">
-                    <input type="checkbox" id="remember" />
-                    <label htmlFor="remember">Remember me</label>
-                  </div>
-                  <a href="#" className="forgot-password">Forgot password?</a>
-                </div>
-                
-                <button 
-                  type="submit" 
-                  className="login-button"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <span className="loading-spinner"></span>
-                  ) : (
-                    'Sign In'
-                  )}
-                </button>
-              </form>
-              
-              <div className="login-footer">
-                <p>Don't have an account? <Link to="/restaurant-registration">Register your restaurant</Link></p>
-                <Link to="/" className="back-home">Back to Home</Link>
-              </div>
-            </div>
-            
-            <div className="login-right">
-              <div className="login-image">
-                <img src="/src/api/i3.jpeg" alt="Restaurant Food Donation" />
-                <div className="image-overlay">
-                  <h2>Join Our Mission</h2>
-                  <p>Help us reduce food waste and fight hunger in our communities.</p>
-                </div>
-              </div>
-            </div>
+    <div className="login-container">
+      <div className="login-form-container">
+        <h2>{forgotPassword ? "Reset Password" : "Login"}</h2>
+
+        {!forgotPassword && (
+          <div className="login-tabs">
+            <button
+              className={`tab-button ${loginMethod === "email" || loginMethod === "password" ? "active" : ""}`}
+              onClick={() => toggleLoginMethod("email")}
+            >
+              Email & Password
+            </button>
+            <button
+              className={`tab-button ${loginMethod === "phone" ? "active" : ""}`}
+              onClick={() => toggleLoginMethod("phone")}
+            >
+              Phone & Password
+            </button>
+            <button
+              className={`tab-button ${loginMethod === "otp" ? "active" : ""}`}
+              onClick={() => toggleLoginMethod("otp")}
+            >
+              Login with OTP
+            </button>
           </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          {forgotPassword || loginMethod !== "otp" || !otpSent ? (
+            <>
+              {(loginMethod === "email" || forgotPassword) && (
+                <div className="form-group">
+                  <label>Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className={errors.email ? "error" : ""}
+                    placeholder="Enter your email"
+                  />
+                  {errors.email && <span className="error-message">{errors.email}</span>}
+                </div>
+              )}
+
+              {loginMethod === "phone" && (
+                <div className="form-group">
+                  <label>Phone</label>
+                  <input
+                    type="text"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className={errors.phone ? "error" : ""}
+                    placeholder="Enter your phone number"
+                    maxLength="10"
+                  />
+                  {errors.phone && <span className="error-message">{errors.phone}</span>}
+                </div>
+              )}
+
+              {!forgotPassword && loginMethod !== "otp" && (
+                <div className="form-group">
+                  <label>Password</label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className={errors.password ? "error" : ""}
+                    placeholder="Enter your password"
+                  />
+                  {errors.password && <span className="error-message">{errors.password}</span>}
+                </div>
+              )}
+
+              {!forgotPassword && loginMethod !== "otp" && (
+                <div className="forgot-password">
+                  <button type="button" onClick={handleForgotPassword}>
+                    Forgot Password?
+                  </button>
+                </div>
+              )}
+
+              <button type="submit" className="login-button" disabled={loading}>
+                {loading
+                  ? "Processing..."
+                  : forgotPassword
+                    ? "Send Reset OTP"
+                    : loginMethod === "otp"
+                      ? "Send OTP"
+                      : "Login"}
+              </button>
+            </>
+          ) : (
+            <div className="otp-verification">
+              <h3>OTP Verification</h3>
+              <p>
+                An OTP has been sent to your {loginMethod === "email" ? "email" : "phone"}. Please enter it below to
+                verify.
+              </p>
+
+              <div className="form-group">
+                <label>Enter OTP</label>
+                <input
+                  type="text"
+                  value={enteredOtp}
+                  onChange={(e) => setEnteredOtp(e.target.value)}
+                  placeholder="Enter 6-digit OTP"
+                  maxLength="6"
+                />
+              </div>
+
+              <button type="submit" className="login-button" disabled={loading}>
+                {loading ? "Verifying..." : "Verify & Login"}
+              </button>
+
+              <p className="resend-otp">
+                Didn't receive OTP?{" "}
+                <button type="button" onClick={sendOtp} disabled={loading}>
+                  Resend OTP
+                </button>
+              </p>
+            </div>
+          )}
+        </form>
+
+        <div className="register-link">
+          Don't have an account? <a href="/restaurant-registration">Register</a>
         </div>
       </div>
-      
       <style jsx>{`
-        /* Styles from your provided login.jsx */
-        .login-page {
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background-color: #f8f9fa; /* Original background */
-          padding: 20px;
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
         .login-container {
-          width: 100%;
-          max-width: 1100px; /* Adjusted from 1200px for better fit */
-          background: white;
-          border-radius: 12px;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-          overflow: hidden;
-        }
-        
-        .login-content {
           display: flex;
-          flex-direction: row;
-        }
-        
-        .login-left {
-          flex: 1.1; /* Give form side a bit more relative space */
-          padding: 35px 45px; /* Slightly adjusted padding */
-          display: flex;
-          flex-direction: column;
           justify-content: center;
-        }
-        
-        .login-right {
-          flex: 0.9; /* Image side */
-          display: none; /* Hidden on small screens */
-        }
-        
-        @media (min-width: 900px) { /* Adjusted breakpoint for showing right panel */
-          .login-right {
-            display: flex; /* Use flex for alignment of its child */
-            align-items: center;
-            justify-content: center;
-          }
-        }
-        
-        .login-header {
-          text-align: center;
-          margin-bottom: 25px; /* Adjusted margin */
-        }
-        
-        .login-logo {
-          width: 70px; /* Adjusted size */
-          height: auto; /* Maintain aspect ratio */
-          margin-bottom: 15px;
-        }
-        
-        .login-header h1 {
-          font-size: 26px; /* Adjusted size */
-          color: #333;
-          margin-bottom: 8px;
-          font-weight: 600;
-        }
-        
-        .login-header p {
-          color: #555; /* Darker gray for better readability */
-          font-size: 15px;
-          line-height: 1.5;
-        }
-        
-        .error-message, .success-message {
-          display: flex;
           align-items: center;
-          padding: 10px 12px; /* Uniform padding */
-          border-radius: 6px;
-          margin-bottom: 18px; /* Uniform margin */
-          font-size: 14px;
-        }
-        
-        .error-message {
-          background-color: #fee2e2;
-          color: #b91c1c;
-          border: 1px solid #fecaca; /* Softer border */
-        }
-        
-        .success-message {
-          background-color: #dcfce7;
-          color: #166534;
-          border: 1px solid #bbf7d0; /* Softer border */
-        }
-        
-        .message-icon { /* Common class for icons in messages */
-          margin-right: 8px;
-          flex-shrink: 0;
-        }
-        
-        .login-form {
-          margin-bottom: 25px; /* Adjusted margin */
-        }
-        
-        .form-group {
-          margin-bottom: 18px; /* Adjusted margin */
-        }
-        
-        .form-group label {
-          display: block;
-          margin-bottom: 6px; /* Adjusted margin */
-          font-weight: 500;
-          color: #333;
-          font-size: 14px;
-        }
-        
-        .input-wrapper {
-          display: flex;
-          align-items: center;
-          border: 1px solid #ccc; /* Slightly darker default border */
-          border-radius: 6px;
-          padding-left: 12px; /* Space for icon */
-          background: white;
-          transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        
-        .input-wrapper:focus-within {
-          border-color: #4f46e5; /* Original focus color */
-          box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); /* Enhanced focus ring */
-        }
-        
-        .input-icon {
-          color: #777; /* Slightly darker icon color */
-          margin-right: 10px;
-        }
-        
-        .input-wrapper input {
-          flex: 1;
-          border: none;
-          padding: 11px 12px 11px 0; /* Adjusted padding for better vertical centering */
-          font-size: 15px;
-          outline: none;
-          background: transparent;
+          min-height: 100vh;
+          padding: 20px;
+          background-color: #f5f5f5;
         }
 
-        .input-wrapper input::placeholder {
-          color: #999; /* Lighter placeholder */
+        .login-form-container {
+          width: 100%;
+          max-width: 450px;
+          background-color: white;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          padding: 30px;
         }
-        
-        .form-options {
+
+        .login-form-container h2 {
+          text-align: center;
+          margin-bottom: 25px;
+          color: #333;
+        }
+
+        .login-tabs {
           display: flex;
-          justify-content: space-between;
-          align-items: center;
+          margin-bottom: 25px;
+          border-bottom: 1px solid #ddd;
+        }
+
+        .tab-button {
+          flex: 1;
+          padding: 12px;
+          background: none;
+          border: none;
+          border-bottom: 2px solid transparent;
+          font-size: 14px;
+          font-weight: 500;
+          color: #666;
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+
+        .tab-button.active {
+          color: #4caf50;
+          border-bottom-color: #4caf50;
+        }
+
+        .form-group {
           margin-bottom: 20px;
-          font-size: 13px; /* Adjusted size */
         }
-        
-        .remember-me {
-          display: flex;
-          align-items: center;
-          color: #444; /* Darker text */
+
+        .form-group label {
+          display: block;
+          margin-bottom: 8px;
+          font-weight: 500;
+          color: #555;
         }
-        
-        .remember-me input {
-          margin-right: 7px; /* Adjusted spacing */
-          width: 15px;
-          height: 15px;
-          accent-color: #4f46e5; /* Color the checkbox */
+
+        .form-group input {
+          width: 100%;
+          padding: 12px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 16px;
+          transition: border-color 0.3s;
         }
-        .remember-me label { /* Ensure label specific styles */
-            font-weight: normal;
-            margin-bottom: 0;
+
+        .form-group input:focus {
+          border-color: #4caf50;
+          outline: none;
         }
-        
+
+        .form-group input.error {
+          border-color: #f44336;
+        }
+
+        .error-message {
+          color: #f44336;
+          font-size: 14px;
+          margin-top: 5px;
+          display: block;
+        }
+
         .forgot-password {
-          color: #4f46e5;
-          text-decoration: none;
+          text-align: right;
+          margin-bottom: 20px;
         }
-        
-        .forgot-password:hover {
+
+        .forgot-password button {
+          background: none;
+          border: none;
+          color: #4caf50;
+          font-size: 14px;
+          cursor: pointer;
           text-decoration: underline;
+          padding: 0;
         }
-        
+
         .login-button {
           width: 100%;
-          padding: 12px 14px; /* Adjusted padding */
-          background-color: #4f46e5;
+          padding: 14px;
+          background-color: #4caf50;
           color: white;
           border: none;
-          border-radius: 6px;
+          border-radius: 4px;
           font-size: 16px;
           font-weight: 500;
           cursor: pointer;
-          transition: background-color 0.2s ease-in-out;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
-        
-        .login-button:hover {
-          background-color: #4338ca;
-        }
-        
-        .login-button:disabled {
-          background-color: #c7c2f5; /* Lighter purple for disabled */
-          cursor: not-allowed;
-        }
-        
-        .loading-spinner {
-          width: 18px; /* Adjusted size */
-          height: 18px;
-          border: 2px solid rgba(255, 255, 255, 0.4); /* Slightly more visible border */
-          border-radius: 50%;
-          border-top-color: white;
-          animation: spin 0.8s linear infinite; /* Slightly faster */
-        }
-        
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        
-        .login-footer {
-          text-align: center;
-          color: #555;
-          font-size: 14px;
-          margin-top: 20px; /* Added for spacing */
+          transition: background-color 0.3s;
         }
 
-        .login-footer p {
-            margin-bottom: 8px; /* Space between p and a tag if on new lines */
+        .login-button:hover {
+          background-color: #388e3c;
         }
-        
-        .login-footer a {
-          color: #4f46e5;
+
+        .login-button:disabled {
+          background-color: #9e9e9e;
+          cursor: not-allowed;
+        }
+
+        .register-link {
+          text-align: center;
+          margin-top: 20px;
+          font-size: 16px;
+        }
+
+        .register-link a {
+          color: #4caf50;
           text-decoration: none;
           font-weight: 500;
         }
-        
-        .login-footer a:hover {
+
+        .register-link a:hover {
           text-decoration: underline;
         }
-        
-        .back-home { /* Ensures it's treated as a block if needed for spacing */
-          display: inline-block; 
-          margin-top: 8px;
+
+        .otp-verification {
+          text-align: center;
+          padding: 10px 0;
         }
-        
-        .login-image { /* Container for the image itself */
-          height: 100%;
-          width: 100%; /* Make sure it fills login-right */
-          position: relative; /* For overlay */
-          overflow: hidden; /* If login-right has rounded corners */
+
+        .otp-verification h3 {
+          margin-bottom: 15px;
+          color: #333;
         }
-        
-        .login-image img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover; /* Ensures image covers the area well */
+
+        .otp-verification p {
+          margin-bottom: 20px;
+          color: #666;
         }
-        
-        .image-overlay {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 25%, transparent); /* Slightly stronger gradient */
-          color: white;
-          padding: 25px 30px; /* Adjusted padding */
+
+        .resend-otp {
+          margin-top: 15px;
+          font-size: 14px;
         }
-        
-        .image-overlay h2 {
-          font-size: 22px; /* Adjusted size */
-          margin-bottom: 8px;
-          font-weight: 600;
+
+        .resend-otp button {
+          background: none;
+          border: none;
+          color: #4caf50;
+          font-weight: 500;
+          cursor: pointer;
+          text-decoration: underline;
+          padding: 0;
+          font-size: 14px;
         }
-        .image-overlay p {
-            font-size: 15px;
-            line-height: 1.5;
+
+        .resend-otp button:hover {
+          color: #388e3c;
+        }
+
+        .resend-otp button:disabled {
+          color: #9e9e9e;
+          cursor: not-allowed;
+        }
+
+        @media (max-width: 480px) {
+          .login-form-container {
+            padding: 20px;
+          }
+
+          .login-tabs {
+            flex-direction: column;
+            border-bottom: none;
+          }
+
+          .tab-button {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 8px;
+          }
+
+          .tab-button.active {
+            background-color: #f0f8f0;
+            border-color: #4caf50;
+          }
         }
       `}</style>
-    </>
-  );
-};
+    </div>
+  )
+}
 
-export default Login;
+export default Login

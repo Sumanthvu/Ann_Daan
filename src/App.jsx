@@ -1,26 +1,29 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import './App.css';
-import RestaurantRegistration from './components/RestaurantRegistration';
-import VolunteerForm from './components/VolunteerForm';
-import Login from './components/Login';
-import RestaurantDashboard from './components/RestaurantDashboard';
+"use client"
+
+import { useState, useEffect } from "react"
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
+import "./App.css"
+import RestaurantRegistration from "./components/RestaurantRegistration"
+import VolunteerForm from "./components/VolunteerForm"
+import Login from "./components/Login"
+import RestaurantDashboard from "./components/RestaurantDashboard"
+import ResetPassword from "./components/ResetPassword"
 
 function App() {
   // Check if user is authenticated
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [userRole, setUserRole] = useState("")
 
   useEffect(() => {
     // Check if user is authenticated on component mount
-    const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    
+    const token = localStorage.getItem("token")
+    const user = JSON.parse(localStorage.getItem("user") || "{}")
+
     if (token) {
-      setIsAuthenticated(true);
-      setUserRole(user.role || '');
+      setIsAuthenticated(true)
+      setUserRole(user.role || "")
     }
-  }, []);
+  }, [])
 
   return (
     <Router>
@@ -29,59 +32,60 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/restaurant-registration" element={<RestaurantRegistration />} />
         <Route path="/volunteer-registration" element={<VolunteerForm />} />
-        
+        <Route path="/reset-password" element={<ResetPassword />} />
+
         {/* Protected route for restaurant dashboard */}
-        <Route 
-          path="/restaurant/dashboard" 
+        <Route
+          path="/restaurant/dashboard"
           element={
-            isAuthenticated || localStorage.getItem('token') === 'demo-token-for-hardcoded-user' ? (
+            isAuthenticated || localStorage.getItem("token") === "demo-token-for-hardcoded-user" ? (
               <RestaurantDashboard />
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
+          }
         />
       </Routes>
     </Router>
-  );
+  )
 }
 
 function MainContent() {
-  const [slideIndex, setSlideIndex] = useState(1);
+  const [slideIndex, setSlideIndex] = useState(1)
 
   // Function to show slides
   const showSlides = (n) => {
-    let i;
-    const slides = document.getElementsByClassName("mySlides");
-    if (!slides.length) return;
-    
-    let newIndex = n;
-    if (n > slides.length) newIndex = 1;
-    if (n < 1) newIndex = slides.length;
-    
+    let i
+    const slides = document.getElementsByClassName("mySlides")
+    if (!slides.length) return
+
+    let newIndex = n
+    if (n > slides.length) newIndex = 1
+    if (n < 1) newIndex = slides.length
+
     for (i = 0; i < slides.length; i++) {
-      slides[i].style.display = "none";
+      slides[i].style.display = "none"
     }
-    
-    slides[newIndex - 1].style.display = "block";
-    setSlideIndex(newIndex);
-  };
+
+    slides[newIndex - 1].style.display = "block"
+    setSlideIndex(newIndex)
+  }
 
   // Functions for controlling slides
   const plusSlides = (n) => {
-    showSlides(slideIndex + n);
-  };
+    showSlides(slideIndex + n)
+  }
 
   useEffect(() => {
-    showSlides(slideIndex);
-    
+    showSlides(slideIndex)
+
     // Auto slider
     const interval = setInterval(() => {
-      plusSlides(1);
-    }, 5000);
-    
-    return () => clearInterval(interval);
-  }, [slideIndex]);
+      plusSlides(1)
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [slideIndex])
 
   return (
     <div className="App">
@@ -96,19 +100,19 @@ function MainContent() {
       <TeamSection />
       <Footer />
     </div>
-  );
+  )
 }
 
 function Header() {
   // Check if user is authenticated
-  const isAuthenticated = localStorage.getItem('token') !== null;
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isAuthenticated = localStorage.getItem("token") !== null
+  const user = JSON.parse(localStorage.getItem("user") || "{}")
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.href = '/';
-  };
+    localStorage.removeItem("token")
+    localStorage.removeItem("user")
+    window.location.href = "/"
+  }
 
   return (
     <header>
@@ -119,25 +123,45 @@ function Header() {
         </div>
         <nav>
           <ul>
-            <li><a href="#one">Home</a></li>
-            <li><a href="#contribute">Contribute</a></li>
-            <li><a href="#get-help">Get Help</a></li>
-            <li><a href="#services">Services</a></li>
-            <li><a href="#about-us">About Us</a></li>
-            <li><a href="#contact">Contact</a></li>
+            <li>
+              <a href="#one">Home</a>
+            </li>
+            <li>
+              <a href="#contribute">Contribute</a>
+            </li>
+            <li>
+              <a href="#get-help">Get Help</a>
+            </li>
+            <li>
+              <a href="#services">Services</a>
+            </li>
+            <li>
+              <a href="#about-us">About Us</a>
+            </li>
+            <li>
+              <a href="#contact">Contact</a>
+            </li>
             {isAuthenticated ? (
               <>
-                <li><a href="/restaurant/dashboard">Dashboard</a></li>
-                <li><a href="#" onClick={handleLogout}>Logout</a></li>
+                <li>
+                  <a href="/restaurant/dashboard">Dashboard</a>
+                </li>
+                <li>
+                  <a href="#" onClick={handleLogout}>
+                    Logout
+                  </a>
+                </li>
               </>
             ) : (
-              <li><a href="/login">Login</a></li>
+              <li>
+                <a href="/login">Login</a>
+              </li>
             )}
           </ul>
         </nav>
       </div>
     </header>
-  );
+  )
 }
 
 function SliderSection({ plusSlides }) {
@@ -164,19 +188,23 @@ function SliderSection({ plusSlides }) {
             <img src="/src/assets/img/img3.jpg" alt="Slide 3" />
           </div>
         </div>
-        
+
         <div className="mySlides fade">
           <div className="numbertext">4 / 4</div>
           <div className="img-container">
             <img src="/src/assets/img/img4.jpg" alt="Slide 4" />
           </div>
         </div>
-        
-        <a className="prev" onClick={() => plusSlides(-1)}>❮</a>
-        <a className="next" onClick={() => plusSlides(1)}>❯</a>
+
+        <a className="prev" onClick={() => plusSlides(-1)}>
+          ❮
+        </a>
+        <a className="next" onClick={() => plusSlides(1)}>
+          ❯
+        </a>
       </div>
     </section>
-  );
+  )
 }
 
 function WelcomeSection() {
@@ -184,7 +212,7 @@ function WelcomeSection() {
     <div id="one" style={{ marginTop: "25%" }}>
       <h1>Welcome to Ann Daan</h1>
     </div>
-  );
+  )
 }
 
 function MissionSection() {
@@ -194,7 +222,11 @@ function MissionSection() {
         <h2>Our Mission</h2>
         <div className="mission-content">
           <div className="mission-text" id="min">
-            <p>At Ann Daan, we believe that no one should go hungry while good food goes to waste. Our mission is to create a sustainable and efficient food donation ecosystem that connects surplus food with those in need, fostering a sense of community and social responsibility.</p>
+            <p>
+              At Ann Daan, we believe that no one should go hungry while good food goes to waste. Our mission is to
+              create a sustainable and efficient food donation ecosystem that connects surplus food with those in need,
+              fostering a sense of community and social responsibility.
+            </p>
           </div>
 
           <div className="mission-stats">
@@ -217,7 +249,7 @@ function MissionSection() {
         </div>
       </div>
     </section>
-  );
+  )
 }
 
 function TestimonialsSection() {
@@ -227,31 +259,38 @@ function TestimonialsSection() {
         <h2>What People Say</h2>
         <div className="testimonial-grid">
           <div className="testimonial fade-in">
-            <p className="testimonial-content">"Ann Daan has made a huge difference in our community. Their dedication to fighting hunger is inspiring."</p>
+            <p className="testimonial-content">
+              "Ann Daan has made a huge difference in our community. Their dedication to fighting hunger is inspiring."
+            </p>
             <p className="testimonial-author">- Varun Shinde, Local Resident</p>
           </div>
           <div className="testimonial fade-in">
-            <p className="testimonial-content">"As a restaurant owner, I'm grateful for the opportunity to donate our surplus food and make a positive impact."</p>
+            <p className="testimonial-content">
+              "As a restaurant owner, I'm grateful for the opportunity to donate our surplus food and make a positive
+              impact."
+            </p>
             <p className="testimonial-author">- Virat Sharma, Restaurant Owner</p>
           </div>
           <div className="testimonial fade-in">
-            <p className="testimonial-content">"The volunteers at Ann Daan are amazing. Their kindness and hard work truly make a difference."</p>
+            <p className="testimonial-content">
+              "The volunteers at Ann Daan are amazing. Their kindness and hard work truly make a difference."
+            </p>
             <p className="testimonial-author">- John Doe, Volunteer</p>
           </div>
         </div>
       </div>
     </section>
-  );
+  )
 }
 
 function ContributeSection() {
   const handleDonateClick = () => {
-    window.open('https://food-don.vercel.app/donate', '_blank');
-  };
+    window.open("https://food-don.vercel.app/donate", "_blank")
+  }
 
   const handleGetHelpClick = () => {
-    window.open('https://food-don.vercel.app/get-food', '_blank');
-  };
+    window.open("https://food-don.vercel.app/get-food", "_blank")
+  }
 
   return (
     <section className="contribute" id="contribute">
@@ -260,39 +299,43 @@ function ContributeSection() {
         <div className="content-box">
           <img src="/src/api/i1.jpeg" id="imgid1" alt="Donate Food" />
         </div>
-        <a onClick={handleDonateClick} className="btn" style={{ cursor: 'pointer' }}>Donate</a>
+        <a onClick={handleDonateClick} className="btn" style={{ cursor: "pointer" }}>
+          Donate
+        </a>
       </div>
       <div className="container1">
         <h2 id="animationid">Get Help!</h2>
         <div className="content-box">
           <img src="/src/api/i2.jpeg" id="imgid1" alt="Get Food Help" />
         </div>
-        <a onClick={handleGetHelpClick} className="btn" style={{ cursor: 'pointer' }}>Get Help</a>
+        <a onClick={handleGetHelpClick} className="btn" style={{ cursor: "pointer" }}>
+          Get Help
+        </a>
       </div>
     </section>
-  );
+  )
 }
 
 function VolunteerSection() {
   const handleRestaurantClick = (e) => {
-    e.preventDefault();
-    
+    e.preventDefault()
+
     // Check if user is already logged in
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token")
     if (token) {
       // If logged in, redirect to dashboard
-      window.location.href = `${window.location.origin}/restaurant/dashboard`;
+      window.location.href = `${window.location.origin}/restaurant/dashboard`
     } else {
       // If not logged in, redirect to registration
-      window.location.href = `${window.location.origin}/restaurant-registration`;
+      window.location.href = `${window.location.origin}/restaurant-registration`
     }
-  };
+  }
 
   const handleVolunteerClick = (e) => {
-    e.preventDefault();
-    const registrationPath = `${window.location.origin}/volunteer-registration`;
-    window.location.href = registrationPath;
-  };
+    e.preventDefault()
+    const registrationPath = `${window.location.origin}/volunteer-registration`
+    window.location.href = registrationPath
+  }
 
   return (
     <section className="contribute">
@@ -301,17 +344,21 @@ function VolunteerSection() {
         <div className="content-box">
           <img src="/src/api/i3.jpeg" id="imgid1" alt="Restaurant Registration" />
         </div>
-        <a onClick={handleRestaurantClick} className="btn" style={{ cursor: 'pointer' }}>Register</a>
+        <a onClick={handleRestaurantClick} className="btn" style={{ cursor: "pointer" }}>
+          Register
+        </a>
       </div>
       <div className="container2">
         <h2 id="animationid">Volunteer!</h2>
         <div className="content-box">
           <img src="/src/api/i4.jpg" id="imgid1" alt="Volunteer Registration" />
         </div>
-        <a onClick={handleVolunteerClick} className="btn" style={{ cursor: 'pointer' }}>Register</a>
+        <a onClick={handleVolunteerClick} className="btn" style={{ cursor: "pointer" }}>
+          Register
+        </a>
       </div>
     </section>
-  );
+  )
 }
 
 function HowItWorksSection() {
@@ -328,20 +375,24 @@ function HowItWorksSection() {
           <div className="step fade-in">
             <img src="/src/assets/img/Secure.png" alt="Secure Food" />
             <h3>Food is Secured</h3>
-            <p>Food is secured through our network of generous donors and partners, ensuring it reaches those in need.</p>
+            <p>
+              Food is secured through our network of generous donors and partners, ensuring it reaches those in need.
+            </p>
           </div>
           <div className="step slide-in-right">
             <img src="/src/assets/img/Pick.png" alt="Pick Up Food" />
             <h3>Food is Picked Up</h3>
-            <p>Our team ensures that every donation is picked up promptly and delivered safely to those who need it most.</p>
+            <p>
+              Our team ensures that every donation is picked up promptly and delivered safely to those who need it most.
+            </p>
           </div>
         </div>
       </div>
     </section>
-  );
+  )
 }
 
-function TeamSection() { 
+function TeamSection() {
   const teamMembers = [
     { name: "Vaidik Saxena", id: "LCS2024016", image: "/src/assets/img/1.jpeg" },
     { name: "Sumanth V U", id: "LIT2024058", image: "/src/assets/img/2.jpeg" },
@@ -350,28 +401,31 @@ function TeamSection() {
     { name: "Sandesh Raj", id: "LCS2024004", image: "/src/assets/img/5.jpeg" },
     { name: "Vansh Tomar", id: "LCS2024043", image: "/src/assets/img/6.jpeg" },
     { name: "Gubba Pavani", id: "LIT2024035", image: "/src/assets/img/7.jpeg" },
-    { name: "Shaik Meer G S", id: "LCS2024025", image: "/src/assets/img/8.jpeg" }
-  ];
-
+    { name: "Shaik Meer G S", id: "LCS2024025", image: "/src/assets/img/8.jpeg" },
+  ]
 
   return (
     <section id="about-us" className="section about-us">
       <div className="container">
-        <h2><strong>Our Team</strong></h2>
+        <h2>
+          <strong>Our Team</strong>
+        </h2>
         <div className="team-grid">
           {teamMembers.map((member, index) => (
             <div id="check" key={index}>
               <div className="team-member">
                 <img src={member.image || "/placeholder.svg"} alt={`Team Member ${index + 1}`} />
               </div>
-              <p id="pid" style={{ color: "black" }}><strong>{member.name}</strong></p>
+              <p id="pid" style={{ color: "black" }}>
+                <strong>{member.name}</strong>
+              </p>
               <p id="pid">{member.id}</p>
             </div>
           ))}
         </div>
       </div>
     </section>
-  );
+  )
 }
 
 function Footer() {
@@ -390,22 +444,44 @@ function Footer() {
           <div className="footer-section links">
             <h3>Quick Links</h3>
             <ul>
-              <li><a href="#home">Home</a></li>
-              <li><a href="#about">About Us</a></li>
-              <li><a href="#food-donors">Food Donors</a></li>
-              <li><a href="#volunteers">Volunteers</a></li>
-              <li><a href="#charities">Charities</a></li>
-              <li><a href="#our-team">Our Team</a></li>
-              <li><a href="#faqs">FAQs</a></li>
+              <li>
+                <a href="#home">Home</a>
+              </li>
+              <li>
+                <a href="#about">About Us</a>
+              </li>
+              <li>
+                <a href="#food-donors">Food Donors</a>
+              </li>
+              <li>
+                <a href="#volunteers">Volunteers</a>
+              </li>
+              <li>
+                <a href="#charities">Charities</a>
+              </li>
+              <li>
+                <a href="#our-team">Our Team</a>
+              </li>
+              <li>
+                <a href="#faqs">FAQs</a>
+              </li>
             </ul>
           </div>
 
           <div className="footer-section contact">
             <h3>Contact Us</h3>
             <address>
-              <p><i className="fa-solid fa-location-dot"></i> IIITL, Chakganjaraia,<br />C.G. City Lucknow, 226002</p>
-              <p><i className="fa-solid fa-phone"></i> +91123467899</p>
-              <p><i className=""></i> <a href="mailto:annadaan@gmail.com">annadaan@gmail.com</a></p>
+              <p>
+                <i className="fa-solid fa-location-dot"></i> IIITL, Chakganjaraia,
+                <br />
+                C.G. City Lucknow, 226002
+              </p>
+              <p>
+                <i className="fa-solid fa-phone"></i> +91123467899
+              </p>
+              <p>
+                <i className=""></i> <a href="mailto:annadaan@gmail.com">annadaan@gmail.com</a>
+              </p>
             </address>
           </div>
 
@@ -413,31 +489,37 @@ function Footer() {
             <h3>Join Our Newsletter</h3>
             <form className="newsletter-form">
               <input type="email" placeholder="Your email address" required />
-              <button type="submit" className="btn-subscribe">Subscribe</button>
+              <button type="submit" className="btn-subscribe">
+                Subscribe
+              </button>
             </form>
-            <div className="social-media">
-              {/* Social media icons could go here */}
-            </div>
+            <div className="social-media">{/* Social media icons could go here */}</div>
           </div>
         </div>
       </div>
 
       <div className="donate-banner">
         <p>Help us make a difference today</p>
-        <a href="#donate" className="btn-donate">DONATE NOW</a>
+        <a href="#donate" className="btn-donate">
+          DONATE NOW
+        </a>
       </div>
 
       <div className="footer-bottom">
         <div className="container">
           <p>&copy; 2024 Ann Daan. All rights reserved.</p>
           <ul className="footer-policies">
-            <li><a href="#privacy">Privacy Policy</a></li>
-            <li><a href="#terms">Terms of Service</a></li>
+            <li>
+              <a href="#privacy">Privacy Policy</a>
+            </li>
+            <li>
+              <a href="#terms">Terms of Service</a>
+            </li>
           </ul>
         </div>
       </div>
     </footer>
-  );
+  )
 }
 
-export default App;
+export default App
